@@ -55,10 +55,13 @@ export interface UserProfile {
 }
 
 export interface LeaderboardEntry {
-  userId: string;
+  id: number;
+  user_id: string;
   username: string;
-  avatarUrl: string;
   points: number;
-  rank: number;
-  streak: number;
+  correct_predictions: number;
+  total_predictions: number;
+  rank?: number;
 }
+
+export type LeaderboardPeriod = 'weekly' | 'monthly' | 'all-time';
