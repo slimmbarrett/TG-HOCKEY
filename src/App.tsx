@@ -7,6 +7,9 @@ import { games, leaderboardData } from './data/mockData';
 import { Prediction, UserProfile } from './types';
 import { supabase } from './lib/supabase';
 
+// Development mode flag
+const isDevelopment = import.meta.env.DEV;
+
 function App() {
   const [activeTab, setActiveTab] = useState('games');
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
@@ -14,8 +17,11 @@ function App() {
 
   useEffect(() => {
     const initTelegram = async () => {
+      console.log('Initializing Telegram...');
       const tg = (window as any).Telegram?.WebApp;
-      if (!tg) {
+      console.log('Telegram WebApp:', tg);
+      
+      if (!tg && !isDevelopment) {
         console.error('Telegram WebApp is not available');
         setIsLoading(false);
         return;
@@ -23,19 +29,48 @@ function App() {
 
       try {
         // Get user data from Telegram
-        const user = tg.initDataUnsafe?.user;
-        if (!user) {
+        const user = tg?.initDataUnsafe?.user;
+        console.log('Telegram user:', user);
+        
+        if (!user && !isDevelopment) {
           console.error('No user data from Telegram');
           setIsLoading(false);
           return;
         }
 
+        // In development mode, use a mock user
+        if (isDevelopment) {
+          console.log('Using development mode with mock user');
+          const mockUser: UserProfile = {
+            id: 'dev-user-1',
+            telegram_id: 123456789,
+            username: 'dev_user',
+            first_name: 'Development',
+            last_name: 'User',
+            stats: {
+              totalPoints: 0,
+              currentStreak: 0,
+              bestStreak: 0,
+              accuracy: 0,
+              correctPredictions: 0,
+              totalPredictions: 0
+            },
+            predictions: []
+          };
+          setUserProfile(mockUser);
+          setIsLoading(false);
+          return;
+        }
+
         // Check if user exists in Supabase
+        console.log('Checking Supabase for user...');
         const { data: existingUser, error: fetchError } = await supabase
           .from('users')
           .select('*')
           .eq('telegram_id', user.id)
           .single();
+
+        console.log('Supabase response:', { existingUser, fetchError });
 
         if (fetchError && fetchError.code !== 'PGRST116') {
           console.error('Error fetching user:', fetchError);
@@ -44,6 +79,7 @@ function App() {
         }
 
         if (!existingUser) {
+          console.log('Creating new user in Supabase...');
           // Create new user in Supabase
           const { data: newUser, error: createError } = await supabase
             .from('users')
@@ -66,6 +102,8 @@ function App() {
             ])
             .select()
             .single();
+
+          console.log('Create user response:', { newUser, createError });
 
           if (createError) {
             console.error('Error creating user:', createError);
