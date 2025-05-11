@@ -1,12 +1,12 @@
 import React, { useState } from 'react';
-import { Game } from '../types';
+import { Game, Prediction } from '../types';
 import Header from '../components/navigation/Header';
 import GamesList from '../components/games/GamesList';
 import PredictionModal from '../components/predictions/PredictionModal';
 
 interface GamesPageProps {
   games: Game[];
-  onMakePrediction: (prediction: any) => void;
+  onMakePrediction: (prediction: Omit<Prediction, 'id' | 'timestamp'>) => void;
 }
 
 const GamesPage: React.FC<GamesPageProps> = ({ games, onMakePrediction }) => {
