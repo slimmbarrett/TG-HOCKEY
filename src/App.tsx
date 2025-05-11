@@ -14,33 +14,32 @@ function App() {
   const [activeTab, setActiveTab] = useState('games');
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     const initTelegram = async () => {
-      console.log('Initializing Telegram...');
+      console.log('--- Telegram WebApp Debug ---');
       const tg = (window as any).Telegram?.WebApp;
+      console.log('window.Telegram:', (window as any).Telegram);
       console.log('Telegram WebApp:', tg);
-      
+      console.log('Telegram initDataUnsafe:', tg?.initDataUnsafe);
+      console.log('Telegram user:', tg?.initDataUnsafe?.user);
+
       if (!tg && !isDevelopment) {
-        console.error('Telegram WebApp is not available');
+        setError('Telegram WebApp API not found. Please open via Telegram.');
         setIsLoading(false);
         return;
       }
 
       try {
-        // Get user data from Telegram
         const user = tg?.initDataUnsafe?.user;
-        console.log('Telegram user:', user);
-        
         if (!user && !isDevelopment) {
-          console.error('No user data from Telegram');
+          setError('No user data received from Telegram. Please open the app via a Telegram bot button.');
           setIsLoading(false);
           return;
         }
 
-        // In development mode, use a mock user
         if (isDevelopment) {
-          console.log('Using development mode with mock user');
           const mockUser: UserProfile = {
             id: 'dev-user-1',
             telegram_id: 123456789,
@@ -63,24 +62,19 @@ function App() {
         }
 
         // Check if user exists in Supabase
-        console.log('Checking Supabase for user...');
         const { data: existingUser, error: fetchError } = await supabase
           .from('users')
           .select('*')
           .eq('telegram_id', user.id)
           .single();
 
-        console.log('Supabase response:', { existingUser, fetchError });
-
         if (fetchError && fetchError.code !== 'PGRST116') {
-          console.error('Error fetching user:', fetchError);
+          setError('Error fetching user from Supabase: ' + fetchError.message);
           setIsLoading(false);
           return;
         }
 
         if (!existingUser) {
-          console.log('Creating new user in Supabase...');
-          // Create new user in Supabase
           const { data: newUser, error: createError } = await supabase
             .from('users')
             .insert([
@@ -103,10 +97,8 @@ function App() {
             .select()
             .single();
 
-          console.log('Create user response:', { newUser, createError });
-
           if (createError) {
-            console.error('Error creating user:', createError);
+            setError('Error creating user in Supabase: ' + createError.message);
             setIsLoading(false);
             return;
           }
@@ -115,8 +107,8 @@ function App() {
         } else {
           setUserProfile(existingUser);
         }
-      } catch (error) {
-        console.error('Error initializing Telegram:', error);
+      } catch (err: any) {
+        setError('Error initializing Telegram: ' + (err.message || err));
       } finally {
         setIsLoading(false);
       }
@@ -165,6 +157,17 @@ function App() {
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#003366] mx-auto"></div>
           <p className="mt-4 text-gray-600">Loading...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen bg-gray-100 flex items-center justify-center">
+        <div className="text-center p-4">
+          <h2 className="text-xl font-semibold text-red-700 mb-2">Access Denied</h2>
+          <p className="text-gray-600">{error}</p>
         </div>
       </div>
     );
