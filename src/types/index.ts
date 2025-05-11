@@ -37,12 +37,16 @@ export interface Prediction {
   points?: number;
   isCorrect?: boolean;
   timestamp: string;
+  user_id: string;
 }
 
 export interface UserProfile {
   id: string;
+  telegram_id: number;
   username: string;
-  avatarUrl: string;
+  first_name: string;
+  last_name?: string;
+  avatar_url?: string;
   stats: {
     totalPoints: number;
     currentStreak: number;
@@ -61,4 +65,12 @@ export interface LeaderboardEntry {
   points: number;
   rank: number;
   streak: number;
+}
+
+export interface TelegramUser {
+  id: number;
+  username?: string;
+  first_name: string;
+  last_name?: string;
+  photo_url?: string;
 }
